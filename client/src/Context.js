@@ -3,9 +3,7 @@ import { io } from 'socket.io-client';
 import Peer from 'simple-peer';
 
 const SocketContext = createContext();
-
-// const socket = io('http://localhost:5000');
-const socket = io('https://warm-wildwood-81069.herokuapp.com');
+const socket = io('https://yaso-video-chat.herokuapp.com');
 
 const ContextProvider = ({ children }) => {
   const [callAccepted, setCallAccepted] = useState(false);
@@ -13,6 +11,8 @@ const ContextProvider = ({ children }) => {
   const [stream, setStream] = useState();
   const [name, setName] = useState('');
   const [call, setCall] = useState({});
+  const [doctorId, setDoctorId] = useState(undefined);
+  const [typeUser, setTypeUser] = useState(undefined);
   const [me, setMe] = useState('');
 
   const myVideo = useRef();
@@ -32,6 +32,15 @@ const ContextProvider = ({ children }) => {
     socket.on('callUser', ({ from, name: callerName, signal }) => {
       setCall({ isReceivingCall: true, from, name: callerName, signal });
     });
+
+	const urlSearchParams = new URLSearchParams(window.location.search);
+	const params = Object.fromEntries(urlSearchParams.entries());
+	setName(params.name);
+	setDoctorId(params.idchamada);
+	setTypeUser(params.type_user);
+
+	console.log(urlSearchParams);
+
   }, []);
 
   const answerCall = () => {
@@ -52,11 +61,14 @@ const ContextProvider = ({ children }) => {
     connectionRef.current = peer;
   };
 
-  const callUser = (id) => {
+  const callUser = () => {
+
+	console.log('calling...', doctorId);
+
     const peer = new Peer({ initiator: true, trickle: false, stream });
 
     peer.on('signal', (data) => {
-      socket.emit('callUser', { userToCall: id, signalData: data, from: me, name });
+      socket.emit('callUser', { userToCall: doctorId, signalData: data, from: me, name });
     });
 
     peer.on('stream', (currentStream) => {
@@ -89,6 +101,10 @@ const ContextProvider = ({ children }) => {
       stream,
       name,
       setName,
+	  doctorId,
+	  setDoctorId,
+	  typeUser,
+	  setTypeUser,
       callEnded,
       me,
       callUser,
